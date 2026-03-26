@@ -117,6 +117,11 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.lcp-item.is-loading {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
 .lcp-item-image {
   width: 54px;
   height: 54px;
@@ -144,6 +149,51 @@
   margin-top: 2px;
   color: var(--lcp-muted);
   font-size: 13px;
+}
+
+.lcp-item-actions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lcp-qty-wrap {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  overflow: hidden;
+}
+
+.lcp-qty-btn {
+  width: 32px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.lcp-qty-value {
+  min-width: 36px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.lcp-remove-btn {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  opacity: 0.92;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .lcp-empty {
@@ -255,6 +305,11 @@
 
   .lcp-btn {
     width: 100%;
+  }
+
+  .lcp-item-actions {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .lcp-total-value {

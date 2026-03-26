@@ -27,6 +27,10 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 		add_action( 'template_redirect', array( $this, 'capture_non_ajax_add_to_cart' ) );
 		add_action( 'wp_ajax_lcp_get_cart_snapshot', array( $this, 'ajax_get_cart_snapshot' ) );
 		add_action( 'wp_ajax_nopriv_lcp_get_cart_snapshot', array( $this, 'ajax_get_cart_snapshot' ) );
+		add_action( 'wp_ajax_lcp_update_cart_item', array( $this, 'ajax_update_cart_item' ) );
+		add_action( 'wp_ajax_nopriv_lcp_update_cart_item', array( $this, 'ajax_update_cart_item' ) );
+		add_action( 'wp_ajax_lcp_remove_cart_item', array( $this, 'ajax_remove_cart_item' ) );
+		add_action( 'wp_ajax_nopriv_lcp_remove_cart_item', array( $this, 'ajax_remove_cart_item' ) );
 		add_action( 'wp_footer', array( $this, 'render_modal_markup' ) );
 	}
 
@@ -74,6 +78,8 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 					'checkoutText' => __( 'Оформити замовлення', 'lyuboshchi-cart-popunder' ),
 					'viewCartText' => __( 'Переглянути кошик', 'lyuboshchi-cart-popunder' ),
 					'emptyText'    => __( 'Ваш кошик зараз порожній.', 'lyuboshchi-cart-popunder' ),
+					'removeText'   => __( 'Видалити', 'lyuboshchi-cart-popunder' ),
+					'loadingText'  => __( 'Оновлюємо кошик...', 'lyuboshchi-cart-popunder' ),
 				),
 			)
 		);
@@ -96,9 +102,57 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 			wp_send_json_error( array( 'message' => 'WooCommerce cart unavailable.' ) );
 		}
 
+		wp_send_json_success( $this->build_cart_snapshot() );
+	}
+
+	public function ajax_update_cart_item() {
+		check_ajax_referer( 'lcp_nonce', 'nonce' );
+
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			wp_send_json_error( array( 'message' => 'WooCommerce cart unavailable.' ) );
+		}
+
+		$cart_item_key = isset( $_POST['cartItemKey'] ) ? wc_clean( wp_unslash( $_POST['cartItemKey'] ) ) : '';
+		$quantity      = isset( $_POST['quantity'] ) ? absint( wp_unslash( $_POST['quantity'] ) ) : 0;
+
+		if ( ! $cart_item_key ) {
+			wp_send_json_error( array( 'message' => 'Invalid cart item key.' ) );
+		}
+
+		if ( $quantity <= 0 ) {
+			WC()->cart->remove_cart_item( $cart_item_key );
+		} else {
+			WC()->cart->set_quantity( $cart_item_key, $quantity, true );
+		}
+
+		WC()->cart->calculate_totals();
+
+		wp_send_json_success( $this->build_cart_snapshot() );
+	}
+
+	public function ajax_remove_cart_item() {
+		check_ajax_referer( 'lcp_nonce', 'nonce' );
+
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			wp_send_json_error( array( 'message' => 'WooCommerce cart unavailable.' ) );
+		}
+
+		$cart_item_key = isset( $_POST['cartItemKey'] ) ? wc_clean( wp_unslash( $_POST['cartItemKey'] ) ) : '';
+
+		if ( ! $cart_item_key ) {
+			wp_send_json_error( array( 'message' => 'Invalid cart item key.' ) );
+		}
+
+		WC()->cart->remove_cart_item( $cart_item_key );
+		WC()->cart->calculate_totals();
+
+		wp_send_json_success( $this->build_cart_snapshot() );
+	}
+
+	private function build_cart_snapshot() {
 		$items = array();
 
-		foreach ( WC()->cart->get_cart() as $cart_item ) {
+		foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
 			$product = $cart_item['data'];
 
 			if ( ! $product || ! $product->exists() ) {
@@ -106,19 +160,19 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 			}
 
 			$items[] = array(
+				'cartItemKey' => $cart_item_key,
 				'name'      => wp_strip_all_tags( $product->get_name() ),
 				'quantity'  => (int) $cart_item['quantity'],
 				'lineTotal' => wp_kses_post( wc_price( (float) $cart_item['line_total'] + (float) $cart_item['line_tax'] ) ),
+				'unitPrice' => wp_kses_post( wc_price( (float) wc_get_price_including_tax( $product ) ) ),
 				'image'     => wp_get_attachment_image_url( $product->get_image_id(), 'woocommerce_thumbnail' ),
 			);
 		}
 
-		wp_send_json_success(
-			array(
-				'items'     => $items,
-				'total'     => wp_kses_post( WC()->cart->get_cart_total() ),
-				'cartCount' => WC()->cart->get_cart_contents_count(),
-			)
+		return array(
+			'items'     => $items,
+			'total'     => wp_kses_post( WC()->cart->get_cart_total() ),
+			'cartCount' => WC()->cart->get_cart_contents_count(),
 		);
 	}
 
