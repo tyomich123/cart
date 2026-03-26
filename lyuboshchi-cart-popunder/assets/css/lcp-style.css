@@ -202,8 +202,10 @@
 }
 
 .lcp-btn-primary {
-  color: #fff;
+  color: #fff !important;
   background: linear-gradient(90deg, var(--lcp-primary-start), var(--lcp-primary-mid), var(--lcp-primary-end));
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .lcp-view-cart-link {
@@ -211,10 +213,24 @@
   padding-top: 10px;
   padding-bottom: 18px;
   text-align: center;
-  color: #fff;
+  color: #fff !important;
   font-size: 14px;
   text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.75);
+  text-underline-offset: 3px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
   opacity: 0.95;
+}
+
+.lcp-dialog a.lcp-btn-primary:hover,
+.lcp-dialog a.lcp-btn-primary:focus,
+.lcp-dialog a.lcp-btn-primary:visited,
+.lcp-dialog a.lcp-btn-primary:active,
+.lcp-dialog a.lcp-view-cart-link:hover,
+.lcp-dialog a.lcp-view-cart-link:focus,
+.lcp-dialog a.lcp-view-cart-link:visited,
+.lcp-dialog a.lcp-view-cart-link:active {
+  color: #fff !important;
 }
 
 @media (max-width: 767px) {
