@@ -203,6 +203,22 @@
   background: rgba(4, 6, 14, 0.3);
 }
 
+.lcp-warning {
+  text-align: left;
+  line-height: 1.45;
+}
+
+.lcp-retry-btn {
+  margin-top: 10px;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .lcp-summary {
   margin-top: 12px;
   margin-bottom: 4px;

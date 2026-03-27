@@ -78,11 +78,13 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 					'checkoutText' => __( 'Оформити замовлення', 'lyuboshchi-cart-popunder' ),
 					'viewCartText' => __( 'Переглянути кошик', 'lyuboshchi-cart-popunder' ),
 					'emptyText'    => __( 'Ваш кошик зараз порожній.', 'lyuboshchi-cart-popunder' ),
-					'removeText'   => __( 'Видалити', 'lyuboshchi-cart-popunder' ),
-					'loadingText'  => __( 'Оновлюємо кошик...', 'lyuboshchi-cart-popunder' ),
-				),
-			)
-		);
+						'removeText'   => __( 'Видалити', 'lyuboshchi-cart-popunder' ),
+						'loadingText'  => __( 'Оновлюємо кошик...', 'lyuboshchi-cart-popunder' ),
+						'fallbackText' => __( 'Не вдалося швидко оновити кошик. Товар уже міг додатися — перевірте кошик.', 'lyuboshchi-cart-popunder' ),
+						'retryText'    => __( 'Спробувати ще раз', 'lyuboshchi-cart-popunder' ),
+					),
+				)
+			);
 	}
 
 	public function capture_non_ajax_add_to_cart() {
@@ -96,6 +98,7 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 	}
 
 	public function ajax_get_cart_snapshot() {
+		nocache_headers();
 		check_ajax_referer( 'lcp_nonce', 'nonce' );
 
 		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
@@ -106,6 +109,7 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 	}
 
 	public function ajax_update_cart_item() {
+		nocache_headers();
 		check_ajax_referer( 'lcp_nonce', 'nonce' );
 
 		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
@@ -131,6 +135,7 @@ final class Lyuboshchi_Woo_Cart_Popunder {
 	}
 
 	public function ajax_remove_cart_item() {
+		nocache_headers();
 		check_ajax_referer( 'lcp_nonce', 'nonce' );
 
 		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {

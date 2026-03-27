@@ -23,6 +23,9 @@
       '</div>' +
     '</li>';
 
+  var addToCartTimeout = null;
+  var MAX_FETCH_RETRIES = 2;
+
   function escapeHtml(input) {
     return String(input)
       .replaceAll('&', '&amp;')
@@ -48,6 +51,29 @@
   function openLoadingState() {
     $items.html(loadingItemTemplate);
     $totalValue.text('...');
+    setOpenState(true);
+  }
+
+  function clearAddToCartTimeout() {
+    if (addToCartTimeout) {
+      clearTimeout(addToCartTimeout);
+      addToCartTimeout = null;
+    }
+  }
+
+  function renderFallbackState() {
+    var retryHtml =
+      '<button type="button" class="lcp-retry-btn">' +
+      escapeHtml(lcpData.i18n.retryText) +
+      '</button>';
+
+    $items.html(
+      '<li class="lcp-empty lcp-warning">' +
+      escapeHtml(lcpData.i18n.fallbackText) +
+      retryHtml +
+      '</li>'
+    );
+    $totalValue.text('—');
     setOpenState(true);
   }
 
@@ -90,21 +116,41 @@
     $totalValue.html(data.total);
   }
 
-  function fetchCartSnapshot() {
+  function fetchCartSnapshot(retryCount) {
+    retryCount = retryCount || 0;
+
     return $.ajax({
       method: 'POST',
       url: lcpData.ajaxUrl,
+      cache: false,
       data: {
         action: 'lcp_get_cart_snapshot',
-        nonce: lcpData.nonce
+        nonce: lcpData.nonce,
+        lcpTs: Date.now()
       }
     }).done(function (response) {
       if (!response || !response.success || !response.data) {
+        if (retryCount < MAX_FETCH_RETRIES) {
+          fetchCartSnapshot(retryCount + 1);
+          return;
+        }
+
+        renderFallbackState();
         return;
       }
 
+      clearAddToCartTimeout();
       renderItems(response.data);
       setOpenState(true);
+    }).fail(function () {
+      if (retryCount < MAX_FETCH_RETRIES) {
+        setTimeout(function () {
+          fetchCartSnapshot(retryCount + 1);
+        }, 250);
+        return;
+      }
+
+      renderFallbackState();
     });
   }
 
@@ -112,18 +158,23 @@
     return $.ajax({
       method: 'POST',
       url: lcpData.ajaxUrl,
+      cache: false,
       data: {
         action: 'lcp_update_cart_item',
         nonce: lcpData.nonce,
         cartItemKey: cartItemKey,
-        quantity: quantity
+        quantity: quantity,
+        lcpTs: Date.now()
       }
     }).done(function (response) {
       if (!response || !response.success || !response.data) {
+        renderFallbackState();
         return;
       }
 
       renderItems(response.data);
+    }).fail(function () {
+      renderFallbackState();
     });
   }
 
@@ -131,31 +182,47 @@
     return $.ajax({
       method: 'POST',
       url: lcpData.ajaxUrl,
+      cache: false,
       data: {
         action: 'lcp_remove_cart_item',
         nonce: lcpData.nonce,
-        cartItemKey: cartItemKey
+        cartItemKey: cartItemKey,
+        lcpTs: Date.now()
       }
     }).done(function (response) {
       if (!response || !response.success || !response.data) {
+        renderFallbackState();
         return;
       }
 
       renderItems(response.data);
+    }).fail(function () {
+      renderFallbackState();
     });
   }
 
   $(document.body).on('adding_to_cart', function () {
     openLoadingState();
+
+    clearAddToCartTimeout();
+    addToCartTimeout = setTimeout(function () {
+      renderFallbackState();
+    }, 3500);
   });
 
   $(document.body).on('added_to_cart', function () {
     openLoadingState();
-    fetchCartSnapshot();
+    fetchCartSnapshot(0);
   });
 
   $modal.on('click', '[data-lcp-close]', function () {
+    clearAddToCartTimeout();
     setOpenState(false);
+  });
+
+  $modal.on('click', '.lcp-retry-btn', function () {
+    openLoadingState();
+    fetchCartSnapshot(0);
   });
 
   $modal.on('click', '.lcp-qty-btn', function () {
@@ -191,12 +258,13 @@
 
   $(document).on('keyup', function (event) {
     if (event.key === 'Escape' && $modal.hasClass('is-open')) {
+      clearAddToCartTimeout();
       setOpenState(false);
     }
   });
 
   if (lcpData.shouldShowOnLoad) {
     openLoadingState();
-    fetchCartSnapshot();
+    fetchCartSnapshot(0);
   }
 })(jQuery);
